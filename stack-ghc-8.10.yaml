@@ -1,4 +1,7 @@
-resolver: lts-17.6
+resolver: lts-18.5
+
+extra-deps:
+  - ghc-lib-parser-9.0.1.20210324
 
 ghc-options:
   '$locals': -Werror
