@@ -1,3 +1,107 @@
+## Unreleased
+
+### Upstream changes:
+
+#### Unreleased
+
+* Data declarations with multiline kind signatures are now formatted
+  correctly. [Issue 749](https://github.com/tweag/ormolu/issues/749).
+
+#### Ormolu 0.2.0.0
+
+* Now standalone kind signatures are grouped with type synonyms. [Issue
+  683](https://github.com/tweag/ormolu/issues/683).
+
+* `TemplateHaskell` is not enabled by default anymore. [Issue
+  699](https://github.com/tweag/ormolu/issues/699).
+
+* Made record dot pre-processor rendering idempotent in certain specific
+  cases. [Issue 701](https://github.com/tweag/ormolu/issues/701).
+
+* Added support for arrow command application. [Issue
+  716](https://github.com/tweag/ormolu/issues/716).
+
+* Switched to `ghc-lib-parser-9.0.1`. [PR
+  722](https://github.com/tweag/ormolu/pull/722).
+   * Support for the new language extensions:
+      * `LexicalNegation`, `LinearTypes`: disabled by default
+      * `QualifiedDo`: enabled by default
+   * Due to [upstream changes in whitespace sensitity](
+     https://gitlab.haskell.org/ghc/ghc/-/wikis/migration/9.0#whitespace-sensitive-and-),
+     `TypeApplications` is now *enabled* by default. [Issue
+     452](https://github.com/tweag/ormolu/issues/452).
+   * Haddocks on declarations in files without a `module` header are no longer
+     deleted. [Issue 480](https://github.com/tweag/ormolu/issues/480).
+   * Due to a change in Haddock parsing, empty Haddock comments on function
+     arguments now get deleted.
+
+* CTYPE pragmas are now preserved. [Issue 689](
+  https://github.com/tweag/ormolu/issues/689).
+
+* `TypeApplications` in data/type family instances are now supported. [Issue
+  698](https://github.com/tweag/ormolu/issues/698).
+
+* Formatting infix arrow command formations now preserves the AST. [Issue
+  718](https://github.com/tweag/ormolu/issues/718).
+
+* Surround code in brackets with spaces if it contains a `StarIsType` `*` to
+  prevent unparseable output. [Issue 704](https://github.com/tweag/ormolu/issues/704).
+
+* Formatting applied multiline constructs in do blocks now preserves the AST.
+  [Issue 707](https://github.com/tweag/ormolu/issues/707).
+
+  This will sometimes result in odd indentations, e.g. this snippet is a
+  fixed point:
+  ```haskell
+  foo = do
+    do
+      (+1)
+     1
+  ```
+
+* GHC options passed in via the CLI can now be overridden in local files.
+  Previously, if an extension was disabled via the CLI, it could not be
+  re-enabled per file.
+
+* `NegativeLiterals` is no longer enabled by default. Also, spaces after
+  negation via `-` are removed where possible. [Issue
+  694](https://github.com/tweag/ormolu/issues/694).
+
+* Minus signs in literal patterns are now preserved in all cases. [Issue
+  733](https://github.com/tweag/ormolu/issues/733).
+
+* Added support for left-to-right arrow application. [Issue
+  737](https://github.com/tweag/ormolu/issues/737).
+
+* Now `--mode check` fails on missing trailing blank lines. [Issue
+  743](https://github.com/tweag/ormolu/issues/743).
+
+* Fixed indentation of arrow forms in do blocks. [Issue
+  739](https://github.com/tweag/ormolu/issues/739).
+
+#### Ormolu 0.1.4.1
+
+* Added command line option `--color` to control how diffs are printed.
+  Standardized the way errors are printed.
+
+#### Ormolu 0.1.4.0
+
+* Added support for monad comprehensions. [Issue
+  665](https://github.com/tweag/ormolu/issues/665).
+
+* Fixed a bug when a space was inserted in front of promoted types even when
+  it wasn't strictly necessary. [Issue
+  668](https://github.com/tweag/ormolu/issues/668).
+
+* Now the checking mode displays diffs per file when unformatted files are
+  found. The rendering of the diffs is also improved. [Issue
+  656](https://github.com/tweag/ormolu/issues/656).
+
+#### Ormolu 0.1.3.1
+
+* Fixed a problem with multiline record updates using the record dot
+  preprocessor. [Issue 658](https://github.com/tweag/ormolu/issues/658).
+
 ## Fourmolu 0.3.0.0
 
 * New config option `newlines-between-decls`, to choose the number of blank lines between top-level declarations.

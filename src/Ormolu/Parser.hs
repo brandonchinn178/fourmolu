@@ -9,23 +9,27 @@ module Ormolu.Parser
   )
 where
 
-import Bag (bagToList)
-import qualified CmdLineParser as GHC
 import Control.Exception
 import Control.Monad.IO.Class
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NE
 import Data.Ord (Down (Down))
 import qualified Data.Text as T
-import DynFlags as GHC
-import ErrUtils (Severity (..), errMsgSeverity, errMsgSpan)
-import qualified FastString as GHC
-import GHC hiding (IE, UnicodeSyntax)
+import GHC.Data.Bag (bagToList)
+import qualified GHC.Data.FastString as GHC
+import qualified GHC.Data.StringBuffer as GHC
+import qualified GHC.Driver.CmdLine as GHC
+import GHC.Driver.Session as GHC
+import qualified GHC.Driver.Types as GHC
 import GHC.DynFlags (baseDynFlags)
 import GHC.LanguageExtensions.Type (Extension (..))
-import qualified HeaderInfo as GHC
-import qualified HscTypes as GHC
-import qualified Lexer as GHC
+import qualified GHC.Parser as GHC
+import qualified GHC.Parser.Header as GHC
+import qualified GHC.Parser.Lexer as GHC
+import GHC.Types.SrcLoc
+import GHC.Unit.Module.Name
+import GHC.Utils.Error (Severity (..), errMsgSeverity, errMsgSpan)
+import qualified GHC.Utils.Panic as GHC
 import Ormolu.Config
 import Ormolu.Exception
 import Ormolu.Parser.Anns
@@ -33,9 +37,6 @@ import Ormolu.Parser.CommentStream
 import Ormolu.Parser.Result
 import Ormolu.Processing.Preprocess (preprocess)
 import Ormolu.Utils (incSpanLine, removeIndentation)
-import qualified Panic as GHC
-import qualified Parser as GHC
-import qualified StringBuffer as GHC
 
 -- | Parse a complete module from string.
 parseModule ::
@@ -108,8 +109,7 @@ parseModule Config {..} path rawInput = liftIO $ do
                         prPragmas = pragmas,
                         prCommentStream = comments,
                         prUseRecordDot = useRecordDot,
-                        prImportQualifiedPost =
-                          GHC.xopt ImportQualifiedPost dynFlags,
+                        prExtensions = GHC.extensionFlags dynFlags,
                         prLiteralPrefix = T.pack literalPrefix,
                         prLiteralSuffix = T.pack literalSuffix,
                         prIndent = indent
@@ -137,17 +137,20 @@ manualExts =
     TransformListComp, -- steals the group keyword
     UnboxedTuples, -- breaks (#) lens operator
     MagicHash, -- screws {-# these things #-}
-    TypeApplications, -- steals (@) operator on some cases
     AlternativeLayoutRule,
     AlternativeLayoutRuleTransitional,
     MonadComprehensions,
     UnboxedSums,
     UnicodeSyntax, -- gives special meanings to operators like (→)
+    TemplateHaskell, -- changes how $foo is parsed
     TemplateHaskellQuotes, -- enables TH subset of quasi-quotes, this
     -- apparently interferes with QuasiQuotes in
     -- weird ways
-    ImportQualifiedPost -- affects how Ormolu renders imports, so the
+    ImportQualifiedPost, -- affects how Ormolu renders imports, so the
     -- decision of enabling this style is left to the user
+    NegativeLiterals, -- with this, `- 1` and `-1` have differing AST
+    LexicalNegation, -- implies NegativeLiterals
+    LinearTypes -- steals the (%) type operator in some cases
   ]
 
 -- | Run a 'GHC.P' computation.
@@ -164,7 +167,7 @@ runParser ::
   GHC.ParseResult a
 runParser parser flags filename input = GHC.unP parser parseState
   where
-    location = GHC.mkRealSrcLoc (GHC.mkFastString filename) 1 1
+    location = mkRealSrcLoc (GHC.mkFastString filename) 1 1
     buffer = GHC.stringToStringBuffer input
     parseState = GHC.mkPState flags buffer location
 
@@ -202,9 +205,9 @@ parsePragmasIntoDynFlags ::
   IO (Either String ([GHC.Warn], DynFlags))
 parsePragmasIntoDynFlags flags extraOpts filepath str =
   catchErrors $ do
-    let opts = GHC.getOptions flags (GHC.stringToStringBuffer str) filepath
+    let fileOpts = GHC.getOptions flags (GHC.stringToStringBuffer str) filepath
     (flags', leftovers, warnings) <-
-      parseDynamicFilePragma flags (opts <> extraOpts)
+      parseDynamicFilePragma flags (extraOpts <> fileOpts)
     case NE.nonEmpty leftovers of
       Nothing -> return ()
       Just unrecognizedOpts ->

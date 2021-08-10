@@ -32,7 +32,6 @@ printModule ParseResult {..} printerOpts =
               prStackHeader
               prShebangs
               prPragmas
-              prImportQualifiedPost
               prParsedSource
           )
           (mkSpanStream prParsedSource)
@@ -40,3 +39,4 @@ printModule ParseResult {..} printerOpts =
           prAnns
           printerOpts
           prUseRecordDot
+          prExtensions

@@ -3,6 +3,16 @@
 [![License BSD3](https://img.shields.io/badge/license-BSD3-brightgreen.svg)](http://opensource.org/licenses/BSD-3-Clause)
 [![Hackage](https://img.shields.io/hackage/v/fourmolu.svg?style=flat)](https://hackage.haskell.org/package/fourmolu)
 
+* [Configuration](#configuration)
+* [Building and installation](#building-and-installation)
+* [Usage](#usage)
+    * [Editor integration](#editor-integration)
+    * [Magic comments](#magic-comments)
+    * [Exit codes](#exit-codes)
+* [Limitations](#limitations)
+* [Contributing](#contributing)
+* [License](#license)
+
 Fourmolu is a formatter for Haskell source code. It is a fork of [Ormolu](https://github.com/tweag/ormolu), with the intention to continue to merge upstream improvements.
 
 We share all bar one of Ormolu's goals:
@@ -11,18 +21,17 @@ We share all bar one of Ormolu's goals:
   [`haskell-src-exts`](https://hackage.haskell.org/package/haskell-src-exts).
 * Let some whitespace be programmable. The layout of the input influences
   the layout choices in the output. This means that the choices between
-  single-line/multi-line layouts in each particular situation are made by
-  the user, not by an algorithm. This makes the implementation simpler and
-  leaves some control to the user while still guaranteeing that the
-  formatted code is stylistically consistent.
+  single-line/multi-line layouts in certain situations are made by the user,
+  not by an algorithm. This makes the implementation simpler and leaves some
+  control to the user while still guaranteeing that the formatted code is
+  stylistically consistent.
 * Writing code in such a way so it's easy to modify and maintain.
-* That formatting style aims to result in minimal diffs while still
-  remaining very close to “conventional” Haskell formatting people use.
+* That formatting style aims to result in minimal diffs.
 * Choose a style compatible with modern dialects of Haskell. As new Haskell
   extensions enter broad use, we may change the style to accommodate them.
 * Idempotence: formatting already formatted code doesn't change it.
-* Be well-tested and robust to the point that it can be used in large
-  projects without exposing unfortunate, disappointing bugs here and there.
+* Be well-tested and robust so that the formatter can be used in large
+  projects.
 * ~~Implementing one “true” formatting style which admits no configuration.~~ We allow configuration of various parameters, via CLI options or config files. We encourage any contributions which add further flexibility.
 
 ## Configuration
@@ -44,7 +53,7 @@ See [here](fourmolu.yaml) for a config to simulate the behaviour of Ormolu.
 
 These options can also be set on the command line (which takes precedence over config files). Run `fourmolu -h` to see all options.
 
-## Building
+## Building and installation
 
 Simply run `cabal v2-install fourmolu`, to install the latest release from Hackage.
 
@@ -70,9 +79,23 @@ Use `find` to format a tree recursively:
 $ fourmolu -i $(find . -name '*.hs')
 ```
 
+Or find all files in a project with `git ls-files`:
+
+```console
+$ fourmoluormolu --mode inplace $(git ls-files '*.hs')
+```
+
+To check if files are are already formatted (useful on CI):
+
+```console
+$ fourmoluormolu --mode check $(find . -name '*.hs')
+```
+
+### Editor integration
+
 Fourmolu can be integrated with your editor via the [Haskell Language Server](https://github.com/haskell/haskell-language-server).
 
-## Magic comments
+### Magic comments
 
 Fourmolu understands two magic comments:
 
@@ -96,13 +119,30 @@ but rather must enclose independent top-level definitions.
 `{- ORMOLU_DISABLE -}` and `{- ORMOLU_ENABLE -}`, respectively, can be used to the same effect,
 and the two styles of magic comments can be mixed.
 
-## Current limitations
+### Exit codes
+
+Exit code | Meaning
+----------|-----------------------------------------------
+0         | Success
+1         | General problem
+2         | CPP used (deprecated)
+3         | Parsing of original input failed
+4         | Parsing of formatted code failed
+5         | AST of original and formatted code differs
+6         | Formatting is not idempotent
+7         | Unrecognized GHC options
+100       | In checking mode: unformatted files
+101       | Inplace and check modes do not work with stdin
+102       | Other issue (with multiple input files)
+400       | Failed to load Fourmolu configuration file
+
+## Limitations
 
 * CPP support is experimental. CPP is virtually impossible to handle
   correctly, so we process them as a sort of unchangeable snippets. This
   works only in simple cases when CPP conditionals surround top-level
-  declarations. See the [CPP](https://github.com/tweag/ormolu/blob/master/DESIGN.md#cpp) section in the design notes for
-  a discussion of the dangers.
+  declarations. See the [CPP](https://github.com/tweag/ormolu/blob/master/DESIGN.md#cpp) section in the design notes for a
+  discussion of the dangers.
 * Input modules should be parsable by Haddock, which is a bit stricter
   criterion than just being valid Haskell modules.
 * Various minor idempotence issues, most of them are related to comments.
