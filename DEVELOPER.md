@@ -1,5 +1,48 @@
 # Fourmolu — Developer notes
 
+## Release a new version
+
+To release a new version, do the following workflow:
+
+1. Create a new branch
+
+    1. Bump version in `fourmolu.cabal`
+        * All version bumps should follow [PvP](https://pvp.haskell.org/)
+
+    1. Curate `CHANGELOG.md`, creating a new section for this version and moving everything previously in `Unreleased` into the new section (keeping `Unreleased` as a section)
+
+        It should roughly follow this format:
+
+        ```md
+        ## Fourmolu 1.2.3.0
+
+        * Fourmolu-specific change 1
+        * Fourmolu-specific change 2
+
+        ### Upstream changes:
+
+        #### Ormolu 2.3.4.0
+
+        * Ormolu change 1
+
+        #### Ormolu 2.3.3.0
+
+        * Other change
+
+        <Any other Ormolu changes merged in this Fourmolu release>
+        ```
+
+    1. Add comments to new features indicating when it was added (e.g. `@since v2.0.0`)
+
+    1. Run `stack haddock` and skim through documentation
+
+1. Create PR as usual and merge into `master`
+    1. In the `test_latest` CI job, check the output of the `stack sdist` step for any warnings.
+
+1. Upload the package to Hackage
+    1. Download the `fourmolu-*.tar.gz` file from CI artifacts
+    1. Upload tarball to Hackage
+
 ## Merging upstream
 
 Fourmolu aims to continue merging upstream changes in Ormolu. Every so often, a PR should be made that takes upstream Ormolu changes and merges them into Fourmolu. This is the workflow to follow:
@@ -10,3 +53,48 @@ Fourmolu aims to continue merging upstream changes in Ormolu. Every so often, a 
 1. Merge in Ormolu changes: `git merge ormolu/master`
 1. (Recommended) Switch to diff3 conflicts: `git checkout --conflict=diff3`. This provides more context that might be helpful for resolving conflicts. See [docs](https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging#_checking_out_conflicts).
 1. Resolve conflicts + finish merge: `git merge --continue`
+1. Run tests to ensure everything works well: `stack test`
+
+### Resolving conflicts
+
+* Conflicts at the following paths should be resolved by keeping the files DELETED (i.e. if there's a "deleted by us" conflict, use `git rm` to avoid adding the file to our repo):
+    * `.github/`
+    * `.buildkite/`
+    * `DESIGN.md`
+    * `default.nix`
+    * `nix/`
+    * `shell.nix`
+
+* The state of the following paths should be the same as they are in Ormolu (i.e. if there's a conflict, use `git checkout --theirs`)
+    * `expected-failures/`
+
+* Any Ormolu additions to `CHANGELOG.md` should be added under a `### Upstream changes:` header in the `Unreleased` section of `CHANGELOG.md`, with the Ormolu headers bumped to `####`. See the CHANGELOG format in the "Release a new version" section.
+
+### Update tests
+
+* If Ormolu added more tests to `examples/`, add an output file for Fourmolu by copying `foo-out.hs` as `foo-four-out.hs`. You can use the following shell command:
+
+    ```bash
+    find data/examples -name '*-four-out.hs' -o -name '*-out.hs' -print0 | while IFS= read -r -d '' f; do
+        dir=$(dirname "$f")
+        name=$(basename "$f" '-out.hs')
+        from="${dir}/${name}-out.hs"
+        to="${dir}/${name}-four-out.hs"
+        if [[ ! -f "$to" ]]; then
+            cp -v "$from" "$to"
+        fi
+    done
+    ```
+
+* Remove any redundant Fourmolu output files
+
+    ```bash
+    find data/examples -name '*-four-out.hs' -print0 | while IFS= read -r -d '' f; do
+        dir=$(dirname "$f")
+        name=$(basename "$f" '-four-out.hs')
+        src="${dir}/${name}.hs"
+        if [[ ! -f "$src" ]]; then
+            rm -v "$f"
+        fi
+    done
+    ```
