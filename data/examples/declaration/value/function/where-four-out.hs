@@ -17,3 +17,14 @@ baz x = q
 emptyWhere :: Int
 emptyWhere = 5
   where
+
+haddocksInWhere :: Int
+haddocksInWhere = q 1
+  where
+    -- | this is a helper function
+    q ::
+      -- | this is the argument
+      Int ->
+      -- | this is the result
+      Int
+    q x = x + 1
